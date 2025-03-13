@@ -1,43 +1,75 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.datasets import make_swiss_roll, fetch_openml
+from sklearn.datasets import make_swiss_roll, fetch_openml, make_blobs
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import umap
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, accuracy_score, classification_report
 import pandas
 
+#    WIZUALIZACJE
 
-X, t = make_swiss_roll(n_samples=1000, noise=0.05)
+X_swiss, y_swiss = make_swiss_roll(n_samples=1000, noise=0.05)
 fig = plt.figure(figsize=(8,6))
 ax = fig.add_subplot(111, projection='3d')
-p = ax.scatter(X[:,0], X[:,1], X[:,2], c=t, cmap=plt.cm.viridis)
+p = ax.scatter(X_swiss[:,0], X_swiss[:,1], X_swiss[:,2], c=y_swiss, cmap=plt.cm.viridis)
 fig.colorbar(p, ax=ax)
 ax.set_title("Swiss Roll - 3D")
 plt.show()
 
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(X)
-plt.scatter(X_pca[:,0], X_pca[:,1], c=t, cmap=plt.cm.viridis)
+pca_swiss = PCA(n_components=2)
+X_pca_swiss = pca_swiss.fit_transform(X_swiss)
+plt.scatter(X_pca_swiss[:,0], X_pca_swiss[:,1], c=y_swiss, cmap=plt.cm.viridis)
 plt.title("Swiss Roll - PCA 2D")
 plt.colorbar()
 plt.show()
 
-tsne = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=30)
-X_tsne = tsne.fit_transform(X)
-plt.scatter(X_tsne[:,0], X_tsne[:,1], c=t, cmap=plt.cm.viridis)
+tsne_swiss = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=30)
+X_tsne_swiss = tsne_swiss.fit_transform(X_swiss)
+plt.scatter(X_tsne_swiss[:,0], X_tsne_swiss[:,1], c=y_swiss, cmap=plt.cm.viridis)
 plt.title("Swiss Roll - t-SNE 2D")
 plt.colorbar()
 plt.show()
 
-reducer = umap.UMAP(n_components=2, n_neighbors=15, min_dist=0.1)
-X_umap = reducer.fit_transform(X)
-plt.scatter(X_umap[:,0], X_umap[:,1], c=t, cmap=plt.cm.viridis)
+umap_swiss = umap.UMAP(n_components=2, n_neighbors=15, min_dist=0.1)
+X_umap_swiss = umap_swiss.fit_transform(X_swiss)
+plt.scatter(X_umap_swiss[:,0], X_umap_swiss[:,1], c=y_swiss, cmap=plt.cm.viridis)
 plt.title("Swiss Roll - UMAP 2D")
 plt.colorbar()
 plt.show()
+
+X_blobs, y_blobs = make_blobs(n_samples=1000, centers=4, n_features=3, random_state=0)
+fig = plt.figure(figsize=(8,6))
+ax = fig.add_subplot(111, projection='3d')
+p = ax.scatter(X_blobs[:,0], X_blobs[:,1], X_blobs[:,2], c=y_blobs, cmap=plt.cm.viridis)
+fig.colorbar(p, ax=ax)
+ax.set_title("Blobs - 3D")
+plt.show()
+
+pca_blobs = PCA(n_components=2)
+X_pca_blobs = pca_blobs.fit_transform(X_blobs)
+plt.scatter(X_pca_blobs[:,0], X_pca_blobs[:,1], c=y_blobs, cmap=plt.cm.viridis)
+plt.title("Blobs - PCA 2D")
+plt.colorbar()
+plt.show()
+
+tsne_blobs = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=30)
+X_tsne_blobs = tsne_blobs.fit_transform(X_blobs)
+plt.scatter(X_tsne_blobs[:,0], X_tsne_blobs[:,1], c=y_blobs, cmap=plt.cm.viridis)
+plt.title("Blobs - t-SNE 2D")
+plt.colorbar()
+plt.show()
+
+umap_blobs = umap.UMAP(n_components=2, n_neighbors=15, min_dist=0.1)
+X_umap_blobs = umap_blobs.fit_transform(X_blobs)
+plt.scatter(X_umap_blobs[:,0], X_umap_blobs[:,1], c=y_blobs, cmap=plt.cm.viridis)
+plt.title("Blobs - UMAP 2D")
+plt.colorbar()
+plt.show()
+
+#    MNIST
 
 mnist = fetch_openml('mnist_784', version=1)
 X_mnist, y_mnist = mnist['data'], mnist['target']
@@ -48,17 +80,47 @@ y_mnist = y_mnist[:10000]
 X_train, X_test, y_train, y_test = train_test_split(X_mnist, y_mnist, test_size=0.2, random_state=42)
 
 clf = RandomForestClassifier(n_estimators=100, random_state=42)
+
 clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
-acc_no_reduction = accuracy_score(y_test, y_pred)
-print("accuracy no reduction:", acc_no_reduction)
+print("Accuracy no reduction:", accuracy_score(y_test, y_pred))
+print("Precision no reduction:", precision_score(y_test, y_pred, average='macro'))
+print("Recall no reduction:", recall_score(y_test, y_pred, average='macro'))
+print("F1-score no reduction:", f1_score(y_test, y_pred, average='macro'))
+print("Confusion Matrix no reduction:\n", confusion_matrix(y_test, y_pred))
 
 pca_mnist = PCA(n_components=50)
 X_mnist_pca = pca_mnist.fit_transform(X_mnist)
 X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_mnist_pca, y_mnist, test_size=0.2, random_state=42)
 
-clf_pca = RandomForestClassifier(n_estimators=100, random_state=42)
-clf_pca.fit(X_train_pca, y_train_pca)
-y_pred_pca = clf_pca.predict(X_test_pca)
-acc_pca = accuracy_score(y_test_pca, y_pred_pca)
-print("accuracy with PCA: ", acc_pca)
+clf.fit(X_train_pca, y_train_pca)
+y_pred_pca = clf.predict(X_test_pca)
+print("Accuracy with PCA:", accuracy_score(y_test_pca, y_pred_pca))
+print("Precision with PCA:", precision_score(y_test_pca, y_pred_pca, average='macro'))
+print("Recall with PCA:", recall_score(y_test_pca, y_pred_pca, average='macro'))
+print("F1-score with PCA:", f1_score(y_test_pca, y_pred_pca, average='macro'))
+print("Confusion Matrix with PCA:\n", confusion_matrix(y_test_pca, y_pred_pca))
+
+tsne_mnist = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=30)
+X_mnist_tsne = tsne_mnist.fit_transform(X_mnist)
+X_train_tsne, X_test_tsne, y_train_tsne, y_test_tsne = train_test_split(X_mnist_tsne, y_mnist, test_size=0.2, random_state=42)
+
+clf.fit(X_train_tsne, y_train_tsne)
+y_pred_tsne = clf.predict(X_test_tsne)
+print("Accuracy with t-SNE:", accuracy_score(y_test_tsne, y_pred_tsne))
+print("Precision with t-SNE:", precision_score(y_test_tsne, y_pred_tsne, average='macro'))
+print("Recall with t-SNE:", recall_score(y_test_tsne, y_pred_tsne, average='macro'))
+print("F1-score with t-SNE:", f1_score(y_test_tsne, y_pred_tsne, average='macro'))
+print("Confusion Matrix with t-SNE:\n", confusion_matrix(y_test_tsne, y_pred_tsne))
+
+umap_mnist = umap.UMAP(n_components=50, n_neighbors=15, min_dist=0.1)
+X_mnist_umap = umap_mnist.fit_transform(X_mnist)
+X_train_umap, X_test_umap, y_train_umap, y_test_umap = train_test_split(X_mnist_umap, y_mnist, test_size=0.2, random_state=42)
+
+clf.fit(X_train_umap, y_train_umap)
+y_pred_umap = clf.predict(X_test_umap)
+print("Accuracy with UMAP:", accuracy_score(y_test_umap, y_pred_umap))
+print("Precision with UMAP:", precision_score(y_test_umap, y_pred_umap, average='macro'))
+print("Recall with UMAP:", recall_score(y_test_umap, y_pred_umap, average='macro'))
+print("F1-score with UMAP:", f1_score(y_test_umap, y_pred_umap, average='macro'))
+print("Confusion Matrix with UMAP:\n", confusion_matrix(y_test_umap, y_pred_umap))
