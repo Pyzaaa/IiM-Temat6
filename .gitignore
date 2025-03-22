@@ -1,2 +1,5 @@
 iims/
 __pycache__/
+
+# PyCharm
+.idea/
