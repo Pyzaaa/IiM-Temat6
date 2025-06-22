@@ -7,11 +7,11 @@ from umap.umap_ import UMAP, smooth_knn_dist, find_ab_params
 
 
 class self_UMAP:
-    def __init__(self, n_neighbors=15, min_dist=0.1, n_epochs=200, learnig_rate=0.01):
+    def __init__(self, n_neighbors=15, min_dist=0.1, n_epochs=200, learning_rate=0.01):
         self.n_neighbors = n_neighbors
         self.min_dist = min_dist
         self.n_epochs = n_epochs
-        self.learning_rate = learnig_rate
+        self.learning_rate = learning_rate
 
     def fit_transform(self, X):
         # ETAP I
