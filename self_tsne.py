@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs, make_s_curve
-from sklearn.neighbors import NearestNeighbors
 from sklearn.manifold import SpectralEmbedding
+from sklearn.manifold import TSNE
+from sklearn.neighbors import NearestNeighbors
+from sklearn.manifold import trustworthiness
 
 from sklearn.datasets import make_swiss_roll
 import time
+
 
 class self_TSNE:
     def __init__(self, n_components=2, perplexity=30.0, max_iter=500, learning_rate=200.0, random_state=None):
@@ -14,8 +17,6 @@ class self_TSNE:
         self.max_iter = max_iter
         self.learning_rate = learning_rate
         self.random_state = random_state
-
-
 
     def _compute_pairwise_affinities(self, X, tol=1e-5):
         """Obliczanie podobieństw P_ij w przestrzeni wysokowymiarowej."""
@@ -80,7 +81,6 @@ class self_TSNE:
 
             momentum = 0.5 if iter < early_iterations else 0.8
 
-
             # Obliczanie podobieństw Q_ij w przestrzeni niskowymiarowej
             sum_Y = np.sum(np.square(Y), 1)
             num = 1 / (1 + np.add.outer(sum_Y, sum_Y) - 2 * np.dot(Y, Y.T))
@@ -101,8 +101,6 @@ class self_TSNE:
         return Y
 
 
-from sklearn.neighbors import NearestNeighbors
-
 def knn_preservation(X_high, X_low, k=10):
     knn_high = NearestNeighbors(n_neighbors=k).fit(X_high)
     knn_low = NearestNeighbors(n_neighbors=k).fit(X_low)
@@ -113,22 +111,15 @@ def knn_preservation(X_high, X_low, k=10):
     overlap = [len(set(neigh_high[i]) & set(neigh_low[i])) / k for i in range(X_high.shape[0])]
     return np.mean(overlap)
 
-from sklearn.manifold import trustworthiness
-
-
-
-
 
 def test_and_plot(X, y, title_prefix, tsne_params):
 
     my_tsne = self_TSNE(**tsne_params)
 
-
     start = time.time()
     X_my = my_tsne.fit_transform(X)
     print(f"Własna t-SNE: {time.time() - start:.2f}s")
 
-    from sklearn.manifold import TSNE
 
 
     tsne = TSNE(n_components=2, perplexity=tsne_params['perplexity'], learning_rate=tsne_params['learning_rate'],
@@ -150,7 +141,6 @@ def test_and_plot(X, y, title_prefix, tsne_params):
     print(f"Trustworthiness (Własna):  {trust_my:.3f}")
     print(f"Trustworthiness (Sklearn): {trust_sklearn:.3f}")
 
-
     # Plot
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
@@ -167,7 +157,6 @@ def test_and_plot(X, y, title_prefix, tsne_params):
 
 
 if __name__ == "__main__":
-
 
     tsne_params = {'perplexity': 30.0, 'max_iter': 500, 'learning_rate': 100.0, 'random_state': 42}
 
