@@ -1,15 +1,16 @@
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.datasets import make_swiss_roll, fetch_openml, make_blobs
+from sklearn.datasets import make_swiss_roll, fetch_openml, make_blobs, fetch_covtype
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import umap
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, accuracy_score, classification_report
-import pandas as pd
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
-import seaborn as sns
+from sklearn.neural_network import MLPClassifier
+from sklearn.utils import resample
 
 scaler = StandardScaler()
 
@@ -85,7 +86,7 @@ X_train, X_test, y_train, y_test = train_test_split(X_mnist, y_mnist, test_size=
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
+clf = MLPClassifier(hidden_layer_sizes=(100,), max_iter=300, random_state=42)
 
 clf.fit(X_train_scaled, y_train)
 y_pred = clf.predict(X_test_scaled)
@@ -192,5 +193,165 @@ df_results.set_index('Metoda', inplace=True)
 plt.figure(figsize=(8, 5))
 sns.heatmap(df_results, annot=True, cmap='YlGnBu', fmt=".3f")
 plt.title("Porównanie metryk klasyfikacji dla różnych metod redukcji")
+plt.tight_layout()
+plt.show()
+
+#   COVERTYPE
+
+data = fetch_covtype()
+X_cov, y_cov = data['data'], data['target']
+X_cov, y_cov = resample(X_cov, y_cov, n_samples=10000, random_state=42)
+
+X_train, X_test, y_train, y_test = train_test_split(X_cov, y_cov, test_size=0.2, random_state=42)
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+clf.fit(X_train_scaled, y_train)
+y_pred = clf.predict(X_test_scaled)
+print("COVERTYPE - Accuracy no reduction:", accuracy_score(y_test, y_pred))
+print("COVERTYPE - Precision:", precision_score(y_test, y_pred, average='macro'))
+print("COVERTYPE - Recall:", recall_score(y_test, y_pred, average='macro'))
+print("COVERTYPE - F1-score:", f1_score(y_test, y_pred, average='macro'))
+
+pca_cov = PCA(n_components=50)
+X_cov_pca = pca_cov.fit_transform(X_cov)
+X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_cov_pca, y_cov, test_size=0.2, random_state=42)
+X_train_pca_scaled = scaler.fit_transform(X_train_pca)
+X_test_pca_scaled = scaler.transform(X_test_pca)
+clf.fit(X_train_pca_scaled, y_train_pca)
+y_pred_pca = clf.predict(X_test_pca_scaled)
+
+tsne_cov = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=30, random_state=42)
+X_cov_tsne = tsne_cov.fit_transform(X_cov)
+X_train_tsne, X_test_tsne, y_train_tsne, y_test_tsne = train_test_split(X_cov_tsne, y_cov, test_size=0.2, random_state=42)
+X_train_tsne_scaled = scaler.fit_transform(X_train_tsne)
+X_test_tsne_scaled = scaler.transform(X_test_tsne)
+clf.fit(X_train_tsne_scaled, y_train_tsne)
+y_pred_tsne = clf.predict(X_test_tsne_scaled)
+
+umap_cov = umap.UMAP(n_components=50, n_neighbors=15, min_dist=0.1, random_state=42)
+X_cov_umap = umap_cov.fit_transform(X_cov)
+X_train_umap, X_test_umap, y_train_umap, y_test_umap = train_test_split(X_cov_umap, y_cov, test_size=0.2, random_state=42)
+X_train_umap_scaled = scaler.fit_transform(X_train_umap)
+X_test_umap_scaled = scaler.transform(X_test_umap)
+clf.fit(X_train_umap_scaled, y_train_umap)
+y_pred_umap = clf.predict(X_test_umap_scaled)
+
+results_cov = {
+    'Metoda': ['Brak redukcji', 'PCA', 't-SNE', 'UMAP'],
+    'Accuracy': [
+        accuracy_score(y_test, y_pred),
+        accuracy_score(y_test_pca, y_pred_pca),
+        accuracy_score(y_test_tsne, y_pred_tsne),
+        accuracy_score(y_test_umap, y_pred_umap)
+    ],
+    'Precision': [
+        precision_score(y_test, y_pred, average='macro'),
+        precision_score(y_test_pca, y_pred_pca, average='macro'),
+        precision_score(y_test_tsne, y_pred_tsne, average='macro'),
+        precision_score(y_test_umap, y_pred_umap, average='macro')
+    ],
+    'Recall': [
+        recall_score(y_test, y_pred, average='macro'),
+        recall_score(y_test_pca, y_pred_pca, average='macro'),
+        recall_score(y_test_tsne, y_pred_tsne, average='macro'),
+        recall_score(y_test_umap, y_pred_umap, average='macro')
+    ],
+    'F1-score': [
+        f1_score(y_test, y_pred, average='macro'),
+        f1_score(y_test_pca, y_pred_pca, average='macro'),
+        f1_score(y_test_tsne, y_pred_tsne, average='macro'),
+        f1_score(y_test_umap, y_pred_umap, average='macro')
+    ]
+}
+
+df_cov = pd.DataFrame(results_cov)
+df_cov.set_index('Metoda', inplace=True)
+
+plt.figure(figsize=(8, 5))
+sns.heatmap(df_cov, annot=True, cmap='Greens', fmt=".3f")
+plt.title("COVERTYPE - porównanie metryk klasyfikacji")
+plt.tight_layout()
+plt.show()
+
+#   MICE PROTEIN
+
+data = fetch_openml(name='MiceProtein', version=4, as_frame=True)
+df = data.frame.dropna()
+
+X = df.select_dtypes(include='number')
+y = df['class']
+
+X, y = resample(X, y, n_samples=min(1000, len(X)), random_state=42, stratify=y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+clf.fit(X_train_scaled, y_train)
+y_pred = clf.predict(X_test_scaled)
+print("MICE - Accuracy no reduction:", accuracy_score(y_test, y_pred))
+print("MICE - Precision:", precision_score(y_test, y_pred, average='macro'))
+print("MICE - Recall:", recall_score(y_test, y_pred, average='macro'))
+print("MICE - F1-score:", f1_score(y_test, y_pred, average='macro'))
+
+pca_mice = PCA(n_components=10)
+X_mice_pca = pca_mice.fit_transform(X)
+X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_mice_pca, y, test_size=0.2, random_state=42, stratify=y)
+X_train_pca_scaled = scaler.fit_transform(X_train_pca)
+X_test_pca_scaled = scaler.transform(X_test_pca)
+clf.fit(X_train_pca_scaled, y_train_pca)
+y_pred_pca = clf.predict(X_test_pca_scaled)
+
+tsne_mice = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=30, random_state=42)
+X_mice_tsne = tsne_mice.fit_transform(X)
+X_train_tsne, X_test_tsne, y_train_tsne, y_test_tsne = train_test_split(X_mice_tsne, y, test_size=0.2, random_state=42, stratify=y)
+X_train_tsne_scaled = scaler.fit_transform(X_train_tsne)
+X_test_tsne_scaled = scaler.transform(X_test_tsne)
+clf.fit(X_train_tsne_scaled, y_train_tsne)
+y_pred_tsne = clf.predict(X_test_tsne_scaled)
+
+umap_mice = umap.UMAP(n_components=10, n_neighbors=15, min_dist=0.1, random_state=42)
+X_mice_umap = umap_mice.fit_transform(X)
+X_train_umap, X_test_umap, y_train_umap, y_test_umap = train_test_split(X_mice_umap, y, test_size=0.2, random_state=42, stratify=y)
+X_train_umap_scaled = scaler.fit_transform(X_train_umap)
+X_test_umap_scaled = scaler.transform(X_test_umap)
+clf.fit(X_train_umap_scaled, y_train_umap)
+y_pred_umap = clf.predict(X_test_umap_scaled)
+
+results_mice = {
+    'Metoda': ['Brak redukcji', 'PCA', 't-SNE', 'UMAP'],
+    'Accuracy': [
+        accuracy_score(y_test, y_pred),
+        accuracy_score(y_test_pca, y_pred_pca),
+        accuracy_score(y_test_tsne, y_pred_tsne),
+        accuracy_score(y_test_umap, y_pred_umap)
+    ],
+    'Precision': [
+        precision_score(y_test, y_pred, average='macro'),
+        precision_score(y_test_pca, y_pred_pca, average='macro'),
+        precision_score(y_test_tsne, y_pred_tsne, average='macro'),
+        precision_score(y_test_umap, y_pred_umap, average='macro')
+    ],
+    'Recall': [
+        recall_score(y_test, y_pred, average='macro'),
+        recall_score(y_test_pca, y_pred_pca, average='macro'),
+        recall_score(y_test_tsne, y_pred_tsne, average='macro'),
+        recall_score(y_test_umap, y_pred_umap, average='macro')
+    ],
+    'F1-score': [
+        f1_score(y_test, y_pred, average='macro'),
+        f1_score(y_test_pca, y_pred_pca, average='macro'),
+        f1_score(y_test_tsne, y_pred_tsne, average='macro'),
+        f1_score(y_test_umap, y_pred_umap, average='macro')
+    ]
+}
+
+df_mice = pd.DataFrame(results_mice)
+df_mice.set_index('Metoda', inplace=True)
+
+plt.figure(figsize=(8, 5))
+sns.heatmap(df_mice, annot=True, cmap='coolwarm', fmt=".3f")
+plt.title("MICE PROTEIN - porównanie metryk klasyfikacji")
 plt.tight_layout()
 plt.show()
