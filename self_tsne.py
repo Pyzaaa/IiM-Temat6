@@ -1,12 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.datasets import make_blobs, make_s_curve
-from sklearn.manifold import SpectralEmbedding
+from sklearn.datasets import make_blobs, make_s_curve, make_swiss_roll
 from sklearn.manifold import TSNE
 from sklearn.neighbors import NearestNeighbors
 from sklearn.manifold import trustworthiness
-
-from sklearn.datasets import make_swiss_roll
 import time
 
 
@@ -70,9 +67,6 @@ class self_TSNE:
 
         Y = np.random.randn(n, self.n_components) * 1e-4
 
-        # Współczynniki momentum
-        # momentum = 0.8
-
         Y_inc = np.zeros_like(Y)
 
         for iter in range(self.max_iter):
@@ -88,13 +82,11 @@ class self_TSNE:
             Q = num / np.sum(num)
             Q = np.maximum(Q, 1e-12)
 
-            # Gradient
             PQ = P - Q
             grad = np.zeros_like(Y)
             for i in range(n):
                 grad[i] = 4 * np.sum((PQ[:, i][:, np.newaxis] * num[:, i][:, np.newaxis]) * (Y[i] - Y), axis=0)
 
-            # Aktualizacja współrzędnych
             Y_inc = momentum * Y_inc - self.learning_rate * grad
             Y += Y_inc
 
@@ -113,14 +105,14 @@ def knn_preservation(X_high, X_low, k=10):
 
 
 def test_and_plot(X, y, title_prefix, tsne_params):
+    # Upewnij się, że X jest numpy array
+    X = np.array(X)
 
     my_tsne = self_TSNE(**tsne_params)
 
     start = time.time()
     X_my = my_tsne.fit_transform(X)
     print(f"Własna t-SNE: {time.time() - start:.2f}s")
-
-
 
     tsne = TSNE(n_components=2, perplexity=tsne_params['perplexity'], learning_rate=tsne_params['learning_rate'],
                 max_iter=tsne_params['max_iter'], init='random', random_state= tsne_params['random_state'])
@@ -155,7 +147,6 @@ def test_and_plot(X, y, title_prefix, tsne_params):
     plt.tight_layout()
     plt.show()
 
-
 if __name__ == "__main__":
 
     tsne_params = {'perplexity': 30.0, 'max_iter': 500, 'learning_rate': 100.0, 'random_state': 42}
@@ -166,12 +157,6 @@ if __name__ == "__main__":
 
     # Test 2 – Swiss Roll
     X2, t2 = make_swiss_roll(n_samples=300, noise=0.01, random_state=1)
-    '''fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111, projection='3d')
-    p = ax.scatter(X2[:, 0], X2[:, 1], X2[:, 2], c=t2, cmap=plt.cm.viridis)
-    fig.colorbar(p, ax=ax)
-    ax.set_title("Swiss Roll - 3D")
-    plt.show()'''
     test_and_plot(X2, t2, "Swiss Roll", tsne_params)
 
     # Test 3 – make_s_curve
